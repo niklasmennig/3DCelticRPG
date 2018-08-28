@@ -88,6 +88,7 @@ void DrawLevel(Level* level) {
 }
 
 void Draw() {
+    shader.Use();
     glm::mat4 matrix = camera.getViewMatrix();
     shader.SetMVP(matrix);
 
@@ -148,12 +149,12 @@ int main() {
         Update();
         glClearColor(0, 0, 1, 1);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        ppBuffer.Bind();
+        //ppBuffer.Bind();
         Draw();
-        ppBuffer.Unbind();
-        uiShader.Use();
-        ppBuffer.UseTexture();
-        screenQuad.Draw();
+        //ppBuffer.Unbind();
+        //uiShader.Use();
+        //ppBuffer.UseTexture();
+        //screenQuad.Draw();
 
         glfwSwapBuffers(window);
         lastMouseX = mouseX;
