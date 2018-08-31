@@ -19,10 +19,10 @@ namespace LevelBuilder {
         for (int i = 0; i < levelString.length(); i++) {
             switch(levelString[i]) {
                 case '#':
-                    result.instances.push_back(MeshInstance(wallMesh, glm::vec3(x, 0, y),wallTex));
+                    result.instances.push_back(MeshInstance(wallMesh, glm::vec3(x, 0, y), glm::vec3(), glm::vec3(1,1,1), wallTex));
                     break;
                 case '-':
-                    result.instances.push_back(MeshInstance(floorMesh, glm::vec3(x, 0, y),floorTex));
+                    result.instances.push_back(MeshInstance(floorMesh, glm::vec3(x, -0.5f, y), glm::vec3(), glm::vec3(1,1,1), floorTex));
                     break;
                 case '/':
                     y++;

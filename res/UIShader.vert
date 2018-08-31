@@ -7,7 +7,7 @@ out vec2 TexCoords;
 
 void main()
 {
-   gl_Position = vec4(aPos.x, aPos.z, aPos.x, 1.0);
+   gl_Position = vec4(aPos.x, aPos.y, 0.5, 1.0);
    VertexColor = aCol;
    TexCoords = aUv;
 };

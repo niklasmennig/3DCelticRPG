@@ -26,10 +26,10 @@ struct Shader {
     void Use() {
         glUseProgram(shaderProgram);
     }
-    void SetMVP(glm::mat4 matrix)
+    void SetMatrix(const char* name, glm::mat4 matrix)
     {
         GLint location;
-        location = glGetUniformLocation(shaderProgram, "MVP");
+        location = glGetUniformLocation(shaderProgram, name);
         glUniformMatrix4fv(location, 1, GL_FALSE, &matrix[0][0]);
     }
 };

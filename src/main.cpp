@@ -1,8 +1,12 @@
 #include <iostream>
 #include "GL/glew.h"
 #include "GLFW/glfw3.h"
+
+#define GLM_ENABLE_EXPERIMENTAL
 #include "glm/glm.hpp"
 #include "glm/gtc/matrix_transform.hpp"
+#include "glm/gtc/quaternion.hpp"
+#include "glm/gtx/quaternion.hpp"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -21,11 +25,15 @@ GLFWwindow *window;
 Camera camera;
 Mesh wallMesh;
 Mesh floorMesh;
+Mesh spriteMesh;
 Mesh screenQuad;
 Shader shader;
 Shader uiShader;
 Texture floorTex;
 Texture wallTex;
+Texture swordTex;
+Texture claymoreTex;
+Texture deerTex;
 FrameBuffer ppBuffer;
 double deltaTime;
 double lastTime;
@@ -50,8 +58,8 @@ std::string levelTxt =
 Level level = LevelBuilder::BuildLevel(levelTxt, &wallMesh, &floorMesh, &wallTex, &floorTex);
 
 void Update() {
-    camera.rotationY += deltaMouseX * deltaTime;
-    camera.rotationX += deltaMouseY * deltaTime;
+    camera.rotationY += deltaMouseX * 20 * deltaTime;
+    camera.rotationX += deltaMouseY * 20 * deltaTime;
 
     if (glfwGetKey(window, GLFW_KEY_ESCAPE)) {
         glfwSetWindowShouldClose(window, 1);
@@ -69,16 +77,18 @@ void Update() {
     //std::cout << camera.rotationX << std::endl;
 }
 
-void DrawMeshInstance(Mesh* mesh, glm::vec3 position) {
-    glm::mat4 matrix = camera.getViewMatrix();
-    matrix = glm::translate(matrix, position);
-    shader.SetMVP(matrix);
+void DrawMeshInstance(Mesh* mesh, glm::vec3 position, glm::vec3 rotation, glm::vec3 scale) {
+    glm::mat4 translationMat = glm::translate(glm::mat4(1.0f), position);
+    glm::mat4 rotationMat = glm::toMat4(glm::quat(glm::vec3(glm::radians(rotation.x), glm::radians(rotation.y), glm::radians(rotation.z))));
+    glm::mat4 scaleMat = glm::scale(glm::mat4(1.0f), scale);
+    glm::mat4 matrix = translationMat * rotationMat * scaleMat;
+    shader.SetMatrix("model",matrix);
     mesh->Draw();
 } 
 
 void DrawMeshInstance(MeshInstance instance) {
     instance.texture->Use();
-    DrawMeshInstance(instance.mesh, instance.position);
+    DrawMeshInstance(instance.mesh, instance.position, instance.rotation, instance.scale);
 }
 
 void DrawLevel(Level* level) {
@@ -87,12 +97,30 @@ void DrawLevel(Level* level) {
     }
 }
 
+void DrawBillboardSprite(glm::vec3 position) {
+    DrawMeshInstance(&spriteMesh, position - glm::vec3(0,0.5f,0), glm::vec3(0, -camera.rotationY, 0), glm::vec3(1, 1, 1));
+}
+
 void Draw() {
+    glEnable(GL_DEPTH_TEST);
     shader.Use();
-    glm::mat4 matrix = camera.getViewMatrix();
-    shader.SetMVP(matrix);
+    shader.SetMatrix("projection", camera.getProjectionMatrix());
+    shader.SetMatrix("view",camera.getViewMatrix());
 
     DrawLevel(&level);
+
+    deerTex.Use();
+    DrawBillboardSprite(glm::vec3(3, 0, 3));
+
+    glDisable(GL_DEPTH_TEST);
+    shader.SetMatrix("view", camera.getViewMatrixUntransformed());
+    //Draw Left Hand Item
+    swordTex.Use();
+    DrawMeshInstance(&spriteMesh,glm::vec3(0.5f,-0.5f,0),glm::vec3(25,0,0), glm::vec3(1.0,1.0,1.0));
+
+    //Draw Right Hand Item
+    claymoreTex.Use();
+    DrawMeshInstance(&spriteMesh,glm::vec3(-0.5f,-0.5f,0),glm::vec3(25,0,0), glm::vec3(1.0,1.0,1.0));
 }
 
 
@@ -100,6 +128,7 @@ int main() {
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     window = glfwCreateWindow(640, 480, "RPG", NULL, NULL);
 
     glfwMakeContextCurrent(window);
@@ -121,8 +150,13 @@ int main() {
     floorTex = Texture("./res/dirtGround.png");
     wallTex = Texture("./res/stoneWall.png");
 
+    swordTex = Texture("./res/schwert.png");
+    claymoreTex = Texture("./res/breitschwert.png");
+    deerTex = Texture("./res/reh.png");
+
     wallMesh = MeshHelper::CreateWallMesh(glm::vec2(0,0), glm::vec2(1,1));
     floorMesh = MeshHelper::CreateFloorMesh(glm::vec2(0, 0), glm::vec2(1, 1));
+    spriteMesh = MeshHelper::CreateSpriteMesh(glm::vec2(0, 0), glm::vec2(1, 1));
 
     Vertex quadVerts[]{
         Vertex(-1, -1, 0, -1, -1),
@@ -138,6 +172,9 @@ int main() {
 
     ppBuffer.GenerateBuffer(320, 240);
 
+    shader.Use();
+    
+
     while (!glfwWindowShouldClose(window)) {
         double mouseX, mouseY;
         glfwGetCursorPos(window, &mouseX, &mouseY);
@@ -149,12 +186,8 @@ int main() {
         Update();
         glClearColor(0, 0, 1, 1);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        //ppBuffer.Bind();
         Draw();
-        //ppBuffer.Unbind();
-        //uiShader.Use();
-        //ppBuffer.UseTexture();
-        //screenQuad.Draw();
+
 
         glfwSwapBuffers(window);
         lastMouseX = mouseX;
