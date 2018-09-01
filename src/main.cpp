@@ -34,6 +34,7 @@ Texture wallTex;
 Texture swordTex;
 Texture claymoreTex;
 Texture deerTex;
+Texture terminalTex;
 FrameBuffer ppBuffer;
 double deltaTime;
 double lastTime;
@@ -97,30 +98,54 @@ void DrawLevel(Level* level) {
     }
 }
 
-void DrawBillboardSprite(glm::vec3 position) {
-    DrawMeshInstance(&spriteMesh, position - glm::vec3(0,0.5f,0), glm::vec3(0, -camera.rotationY, 0), glm::vec3(1, 1, 1));
+void DrawSprite(glm::vec3 position, glm::vec3 rotation, glm::vec3 scale, glm::vec2 uvTopLeft, glm::vec2 uvBotRight) {
+    Vertex vertices[]{
+        Vertex(-0.5f,  -0.5f, 0.0f,   uvTopLeft.x, uvBotRight.y),
+        Vertex(0.5f,   -0.5f, 0.0f,    uvBotRight.x, uvBotRight.y),
+        Vertex(-0.5f,   0.5f, 0.0f,   uvTopLeft.x, uvTopLeft.y),
+        Vertex(-0.5f,   0.5f, 0.0f,   uvTopLeft.x, uvTopLeft.y),
+        Vertex(0.5f,   -0.5f, 0.0f,    uvBotRight.x, uvBotRight.y),
+        Vertex(0.5f,    0.5f, 0.0f,    uvBotRight.x, uvTopLeft.y),
+    };
+    spriteMesh.SetVertices(vertices, 6);
+    spriteMesh.UpdateBuffers(GL_STATIC_DRAW);
+    DrawMeshInstance(&spriteMesh, position, rotation, scale);
+}
+
+//RENDER FULL TEXTURE
+void DrawSprite(glm::vec3 position, glm::vec3 rotation, glm::vec3 scale) {
+    DrawSprite(position, rotation, scale, glm::vec2(), glm::vec2(1, 1));
+}
+
+void DrawBillboardSprite(glm::vec3 position, glm::vec3 scale, glm::vec2 uvTopLeft, glm::vec2 uvBotRight) {
+    DrawSprite(position, glm::vec3(0, -camera.rotationY, 0), scale, uvTopLeft, uvBotRight);
+}
+
+//RENDER FULL TEXTURE
+void DrawBillboardSprite(glm::vec3 position, glm::vec3 scale){
+    DrawSprite(position, glm::vec3(0, -camera.rotationY, 0), scale, glm::vec2(), glm::vec2(1, 1));
 }
 
 void Draw() {
     glEnable(GL_DEPTH_TEST);
     shader.Use();
-    shader.SetMatrix("projection", camera.getProjectionMatrix());
+    shader.SetMatrix("projection", camera.getProjectionMatrix(320, 240));
     shader.SetMatrix("view",camera.getViewMatrix());
 
     DrawLevel(&level);
 
     deerTex.Use();
-    DrawBillboardSprite(glm::vec3(3, 0, 3));
+    DrawBillboardSprite(glm::vec3(3, 0, 3), glm::vec3(1,1,1));
 
     glDisable(GL_DEPTH_TEST);
     shader.SetMatrix("view", camera.getViewMatrixUntransformed());
     //Draw Left Hand Item
     swordTex.Use();
-    DrawMeshInstance(&spriteMesh,glm::vec3(0.5f,-0.5f,0),glm::vec3(25,0,0), glm::vec3(1.0,1.0,1.0));
+    DrawSprite(glm::vec3(0.5f,0,0),glm::vec3(25,0,0), glm::vec3(1.0,1.0,1.0));
 
     //Draw Right Hand Item
     claymoreTex.Use();
-    DrawMeshInstance(&spriteMesh,glm::vec3(-0.5f,-0.5f,0),glm::vec3(25,0,0), glm::vec3(1.0,1.0,1.0));
+    DrawMeshInstance(&spriteMesh,glm::vec3(-0.5f,0,0),glm::vec3(25,0,0), glm::vec3(1.0,1.0,1.0));
 }
 
 
@@ -129,6 +154,7 @@ int main() {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    glfwWindowHint(GLFW_SAMPLES, 4);
     window = glfwCreateWindow(640, 480, "RPG", NULL, NULL);
 
     glfwMakeContextCurrent(window);
@@ -145,32 +171,33 @@ int main() {
 
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
-    shader = Loader::CreateShaderFromFile("./res/StandardShader.vert", "./res/StandardShader.frag");
-    uiShader = Loader::CreateShaderFromFile("./res/UIShader.vert", "./res/UIShader.frag");
-    floorTex = Texture("./res/dirtGround.png");
-    wallTex = Texture("./res/stoneWall.png");
+    shader = Loader::LoadShaderFromFile("./res/StandardShader.vert", "./res/StandardShader.frag");
+    uiShader = Loader::LoadShaderFromFile("./res/UIShader.vert", "./res/UIShader.frag");
+    floorTex = Loader::LoadTextureFromFile("./res/dirtGround.png");
+    wallTex = Loader::LoadTextureFromFile("./res/stoneWall.png");
+    terminalTex = Loader::LoadTextureFromFile("./res/terminal.png");
 
-    swordTex = Texture("./res/schwert.png");
-    claymoreTex = Texture("./res/breitschwert.png");
-    deerTex = Texture("./res/reh.png");
+    swordTex = Loader::LoadTextureFromFile("./res/schwert.png");
+    claymoreTex = Loader::LoadTextureFromFile("./res/breitschwert.png");
+    deerTex = Loader::LoadTextureFromFile("./res/reh.png");
 
     wallMesh = MeshHelper::CreateWallMesh(glm::vec2(0,0), glm::vec2(1,1));
     floorMesh = MeshHelper::CreateFloorMesh(glm::vec2(0, 0), glm::vec2(1, 1));
     spriteMesh = MeshHelper::CreateSpriteMesh(glm::vec2(0, 0), glm::vec2(1, 1));
 
     Vertex quadVerts[]{
-        Vertex(-1, -1, 0, -1, -1),
-        Vertex(1, -1, 0, 1, -1),
-        Vertex(1, 1, 0, 1, 1),
-        Vertex(1, 1, 0, 1, 1),
-        Vertex(-1, 1, 0, -1, 1),
-        Vertex(-1, -1, 0, -1, -1),
+        Vertex(-0.5f, 0, 0, 0, 1),
+        Vertex( 0.5f, 0, 0, 1, 1),
+        Vertex( 0.5f, 1, 0, 1, 0),
+        Vertex( 0.5f, 1, 0, 1, 0),
+        Vertex(-0.5f, 1, 0, 0, 0),
+        Vertex(-0.5f, 0, 0, 0, 1),
     };
     screenQuad.GenerateBuffers();
     screenQuad.SetVertices(quadVerts, 6);
     screenQuad.UpdateBuffers();
 
-    ppBuffer.GenerateBuffer(320, 240);
+    ppBuffer.GenerateBuffer(640, 480);
 
     shader.Use();
     
@@ -184,16 +211,28 @@ int main() {
         deltaTime = newTime - lastTime;
         glfwPollEvents();
         Update();
+        ppBuffer.Bind();
         glClearColor(0, 0, 1, 1);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         Draw();
+        ppBuffer.Unbind();
 
+        uiShader.Use();
+        uiShader.SetMatrix("projection", glm::ortho(-0.5, 0.5, 0.0, 1.0, -0.5, 0.5));
+        uiShader.SetMatrix("view", glm::lookAt(glm::vec3(0, -1, 0), glm::vec3(0, -1, 1), glm::vec3(0, 1, 0)) * glm::rotate(glm::mat4(1.0f), glm::radians(180.0f), glm::vec3(0,0,1)));
+        ppBuffer.UseTexture();
+        glClear(GL_COLOR_BUFFER_BIT);
+        screenQuad.Draw();
+        //terminalTex.Use();
+        //DrawSprite(glm::vec3(), glm::vec3(0,0,180), glm::vec3(1, 1, 1));
 
         glfwSwapBuffers(window);
         lastMouseX = mouseX;
         lastMouseY = mouseY;
         lastTime = newTime;
     }
+
+    Loader::CleanUp();
 
     glfwDestroyWindow(window);
 }

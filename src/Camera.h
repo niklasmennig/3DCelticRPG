@@ -11,8 +11,8 @@ struct Camera {
     float rotationY;
     float rotationX;
 
-    glm::mat4 getProjectionMatrix() {
-        return glm::perspective(glm::radians(45.0f), 640.0f / 480.0f, 0.1f, 100.0f);
+    glm::mat4 getProjectionMatrix(int screenWidth, int screenHeight) {
+        return glm::perspective(glm::radians(45.0f), (float)screenWidth / (float)screenHeight, 0.1f, 100.0f);
     }
 
     glm::mat4 getViewMatrix() {
